@@ -1,11 +1,28 @@
 const path = require('path');
 const express = require("express");
-const http = require('http');
 const app = express();
-const socketio = require('socket.io');
-const server = http.createServer(app);
-const io = socketio(server);
-const PORT = process.env.PORT || 3000;
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const server = require('http').createServer(app);
+const io = require('socket.io')(server, { origins: "localhost:* http://localhost:* http://127.0.0.1:*" });
+const PORT = process.env.PORT || 4000;
+
+app.use(cors());
+
+app.use(bodyParser.urlencoded({
+    extended: false
+}))
+
+// parse application/x-www-form-urlencoded
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Content-Type");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    res.header("Access-Control-Allow-Methods", "PUT, GET, POST, DELETE, OPTIONS");
+    res.setHeader('Content-Type', 'application/json')
+    next();
+});
+
 
 // Set static folder
 app.use(express.static(path.join(__dirname, 'public')));
