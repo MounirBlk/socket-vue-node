@@ -5,16 +5,20 @@
       <p class="username">Username: {{ username }}</p>
       <p class="online">Online: {{ users.length }}</p>
     </div>
+    <ChatRoom v-bind:messages="messages" v-on:sendMessage="this.sendMessage"/>
   </div>
 </template>
 
 <script>
 // @ is an alias to /src
 import io from 'socket.io-client';
+import ChatRoom from '../components/ChatRoom.vue';
 
 export default {
   name: 'Home',
-  components: {},
+  components: {
+    ChatRoom
+  },
   data: () => {
     return{
       username: null,
@@ -26,7 +30,7 @@ export default {
   created() {},
   mounted() {
     //this.username = prompt('Quel est votre pseudo ?', 'Anonymous');
-    if(!this.username) this.username = 'Anonymous';//this.username = !this.username ? 'Anonymous' : this.username
+    if(!this.username) this.username = 'Anonymous'+parseInt(Math.floor(Math.random() * Math.floor(9))+1);//this.username = !this.username ? 'Anonymous' : this.username
     this.joinServer();
   },
   methods: {
@@ -36,6 +40,21 @@ export default {
         this.users = data.users;
         this.socket.emit('newuser',this.username);
       });
+      this.listen();
+    },
+    listen: function(){
+      this.socket.on('userOnline', user => {
+        this.users.push(user);
+      });
+      this.socket.on('userLeft',user => {
+        this.users.splice(this.users.indexOf(user), 1);
+      });
+      this.socket.on('msg', message =>{
+        this.messages.push(message)
+      });
+    },
+    sendMessage:function(message){
+      this.socket.emit('msg', message);
     }
   },
 }
@@ -55,5 +74,7 @@ body{
   width: 100%;
   max-width: 768px;
   margin:0 auto;
+  padding:15px;
+  box-sizing:border-box;
 }
 </style>

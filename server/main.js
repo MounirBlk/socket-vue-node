@@ -2,34 +2,52 @@ const path = require('path');
 const express = require("express");
 const app = express();
 const bodyParser = require('body-parser');
-const cors = require('cors');
 const server = require('http').createServer(app);
-const io = require('socket.io')(server, { origins: "localhost:* http://localhost:* http://127.0.0.1:*" });
+const io = require('socket.io')(server /*, { origins: "localhost:* http://localhost:* http://127.0.0.1:*" }*/ );
 const PORT = process.env.PORT || 4000;
+const mongoose = require("mongoose");
+const cors = require('cors');
 
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true,
+}));
+
+mongoose.connect("mongodb://localhost:27017/socketChatApp", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
+    useCreateIndex: true
+});
+
+const ChatSchema = mongoose.Schema({
+    username: String,
+    msg: String
+});
+
+const ChatModel = mongoose.model("chat", ChatSchema);
+
+ChatModel.find((err, result) => {
+    if (err) throw err;
+    messages = result;
+});
+
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'content-type');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    next();
+});
 
 app.use(bodyParser.urlencoded({
     extended: false
 }))
 
-// parse application/x-www-form-urlencoded
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Content-Type");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    res.header("Access-Control-Allow-Methods", "PUT, GET, POST, DELETE, OPTIONS");
-    res.setHeader('Content-Type', 'application/json')
-    next();
-});
-
-
 // Set static folder
 app.use(express.static(path.join(__dirname, 'public')));
 
 let users = [];
-let message = [];
-let index = 0;
+let messages = [];
 
 io.on("connection", socket => {
     socket.emit('loggedIn', {
@@ -41,19 +59,19 @@ io.on("connection", socket => {
         console.log(`${username} has arrived at the party.`);
         socket.username = username;
         users.push(socket);
-
         io.emit('userOnline', socket.username);
     });
 
     socket.on('msg', msg => {
-        let message = {
-            index: index,
+        let message = new ChatModel({
             username: socket.username,
             msg: msg
-        }
-        messages.push(message);
-        io.emit('msg', message);
-        index++;
+        });
+        message.save((err, result) => {
+            if (err) throw err;
+            messages.push(result);
+            io.emit('msg', result);
+        });
     });
 
     //Disconnect
