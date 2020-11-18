@@ -7,6 +7,7 @@ const io = require('socket.io')(server /*, { origins: "localhost:* http://localh
 const PORT = process.env.PORT || 4000;
 const mongoose = require("mongoose");
 const cors = require('cors');
+const axios = require('axios').default;
 
 app.use(cors({
     origin: true,
@@ -45,6 +46,23 @@ app.use(bodyParser.urlencoded({
 
 // Set static folder
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use((err, req, res, next) => {
+    if (err.name === 'UnauthorizedError')
+        res.status(401).send('Missing authentication credentials.');
+});
+
+app.get('/toto', (req, res) => {
+    axios.get('https://jsonplaceholder.typicode.com/users')
+        .then((response) => {
+            console.log(response.data);
+            res.status(200).json({ error: false, data: response.data });
+
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+});
 
 let users = [];
 let messages = [];
