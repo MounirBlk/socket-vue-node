@@ -5,7 +5,7 @@
       <p class="username">Username: {{ username }}</p>
       <p class="online">Online: {{ users.length }}</p>
     </div>
-    <ChatRoom v-bind:messages="messages" v-on:sendMessage="this.sendMessage"/>
+    <ChatRoom :messages="messages" @sendMessage="this.sendMessage"/>
   </div>
 </template>
 
